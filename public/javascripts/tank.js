@@ -26,6 +26,8 @@ var flash = 1;
 
 var tankReloadRate = 100; // this is in miliseconds; 
 
+document.addEventListener("keydown", keyDownHandler, false);
+document.addEventListener("keyup", keyUpHandler, false);
 class Shot {
     constructor(tank) {
         this.x = tank.x + (tankWidth / 2) + ((tankWidth / 2) * Math.cos(tank.direction));
@@ -44,16 +46,6 @@ class Shot {
 
         this.direction = tank.direction;
     }
-}
-
-function explosion(tank) {
-
-    ctx.beginPath();
-    ctx.arc(tank.x + tankWidth / 2, tank.y + tankHeight / 2, 10, 0, Math.PI * 2);
-    ctx.fillStyle = "red";
-    ctx.fill();
-    ctx.closePath();
-
 }
 
 class Tank {
@@ -114,8 +106,15 @@ class Tank {
     }
 }
 
-document.addEventListener("keydown", keyDownHandler, false);
-document.addEventListener("keyup", keyUpHandler, false);
+function explosion(tank) {
+
+    ctx.beginPath();
+    ctx.arc(tank.x + tankWidth / 2, tank.y + tankHeight / 2, 10, 0, Math.PI * 2);
+    ctx.fillStyle = "red";
+    ctx.fill();
+    ctx.closePath();
+
+}
 
 function keyDownHandler(e) {
 
@@ -391,25 +390,21 @@ function drawTank(tank) {
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    drawTank(tank1);
-    handleKeys(tank1);
+    if (tank1.health > 0) { 
 
-    if (JKey) {
-        rotateTank(tank2, -1 * tankRotation)
+        console.log(JSON.stringify(tank1)); 
+        socket.emit('tankData', tank1); 
+        drawTank(tank1);
+        handleKeys(tank1);
+        tank1.checkIfHit(testTank);      
     }
-    if (LKey) {
-        rotateTank(tank2, tankRotation)
-    }
 
-    // drawTank(tank2);
-    // tank2.checkIfHit(tank1);
-
-    socket.emit('tankData', tank1); 
-
-    drawTank(testTank); 
-    testTank.checkIfHit(tank1); 
-    tank1.checkIfHit(testTank); 
-
+    if (testTank.health > 0) {
+        drawTank(testTank); 
+        if (tank1.health > 0) {
+            tank1.checkIfHit.call(testTank, tank1); 
+        }
+    }  
     
     requestAnimationFrame(draw);
 }
@@ -421,9 +416,8 @@ var testTank = new Tank(40, 40);
 
 var socket = io(); 
 socket.on('serverTankData', function(msg){
-    //console.log(msg); 
-    testTank.update(msg); 
-
-  });
+   // testTank.update(msg); 
+   testTank = msg; 
+});
 
 draw(); 
