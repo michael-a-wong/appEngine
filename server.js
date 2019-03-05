@@ -6,6 +6,27 @@ const bodyParser = require('body-parser');
 // // Required for side-effects
 // require("firebase/firestore");
 
+// Listen to the App Engine-specified port, or 8080 otherwise
+const PORT = process.env.PORT || 3000;
+var server = app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}...`);
+});
+
+// var http = require('http').Server(app);
+var io = require('socket.io').listen(server);
+
+
+io.on('connection', function (socket) {
+  console.log('a user connected');
+  socket.on('disconnect', function () {
+    console.log('user disconnected');
+  });
+  socket.on('tankData', function(msg){
+    //console.log(msg);
+    //io.emit('serverTankData', msg);
+    socket.broadcast.emit('serverTankData', msg); 
+  });
+});
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -15,6 +36,10 @@ app.get('/submit', (req, res) => {
 
 app.get('/game', (req, res) => {
   res.sendFile(path.join(__dirname, '/public/views/index.html'));
+});
+
+app.get('/tank', (req, res) => {
+  res.sendFile(path.join(__dirname, '/public/views/tank.html'));
 });
 
 app.get('/', (req, res) => {
@@ -57,8 +82,8 @@ app.post('/submit', (req, res) => {
 
 
 
-// Listen to the App Engine-specified port, or 8080 otherwise
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}...`);
-});
+
+
+// http.listen(3000, function(){
+//   console.log('listening on *:3000');
+// });
