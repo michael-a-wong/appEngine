@@ -19,6 +19,18 @@ var EKey = 0;
 var SKey = 0;
 var DKey = 0;
 var SpaceKey = 0;
+
+var keyRateArray = new Array(6);
+keyRateArray.fill(1);
+
+var AKeyRate = 1;
+var WKeyRate = 1;
+var EKeyRate = 1;
+var SKeyRate = 1;
+var DKeyRate = 1;
+var SpaceKeyRate = 1;
+
+
 var JKey = 0;
 var LKey = 0;
 
@@ -31,34 +43,34 @@ document.addEventListener("keyup", keyUpHandler, false);
 
 class Game {
     constructor() {
-      this.numOfPlayers = 0; 
-      this.tankObjects = []; 
+        this.numOfPlayers = 0;
+        this.tankObjects = [];
     }
     addPlayer(playerNum, tank) {
-      this.tankObjects[playerNum] = tank; 
-      this.numOfPlayers++; 
+        this.tankObjects[playerNum] = tank;
+        this.numOfPlayers++;
     }
     removePlayer(playerNum) {
-      this.tankObjects.splice(playerNum, 1); 
-      this.numOfPlayers--; 
+        this.tankObjects.splice(playerNum, 1);
+        this.numOfPlayers--;
     }
     playerCommands(playerNum, keys) {
-  
-      var opponent = 0; 
-      if (playerNum == 0) {
-        opponent = 1; 
-      }
-  
-      handleKeys(tankObjects[playerNum], keys)
-      tankObjects[playerNum].checkIfHit(tankObjects[opponent]); 
-  
-      // might have to delete line below
-      tankObjects[opponent].checkIfHit(tankObjects[playerNum]); 
-  
-  
+
+        var opponent = 0;
+        if (playerNum == 0) {
+            opponent = 1;
+        }
+
+        handleKeys(tankObjects[playerNum], keys)
+        tankObjects[playerNum].checkIfHit(tankObjects[opponent]);
+
+        // might have to delete line below
+        tankObjects[opponent].checkIfHit(tankObjects[playerNum]);
+
+
     }
-    
-  }
+
+}
 
 class Shot {
     constructor(tank) {
@@ -131,22 +143,40 @@ function explosion(tank) {
 
 }
 
-function keyDownHandler(e) {
+function keyRate(index) {
+    //console.log("Hello?")
+    keyRateArray[index] = 1;
+}
 
-    if (e.key == "w") {
+// in the future can change it to bit malipulation 
+function keyDownHandler(e) {
+    // console.log(keyRateArray); 
+
+    if (e.key == "w" && keyRateArray[0]) {
         WKey = 1;
+        keyRateArray[0] = 0;
+        setTimeout(keyRate, 15, 0);
+
     }
-    if (e.key == "a") {
+    if (e.key == "a" && keyRateArray[1]) {
         AKey = 1;
+        keyRateArray[1] = 0;
+        setTimeout(keyRate, 15, 1);
     }
-    if (e.key == "s") {
+    if (e.key == "s" && keyRateArray[2]) {
         SKey = 1;
+        keyRateArray[2] = 0;
+        setTimeout(keyRate, 15, 2);
     }
-    if (e.key == "d") {
+    if (e.key == "d" && keyRateArray[3]) {
         DKey = 1;
+        keyRateArray[3] = 0;
+        setTimeout(keyRate, 15, 3);
     }
-    if (e.key == 'e') {
+    if (e.key == 'e' && keyRateArray[4]) {
         EKey = 1;
+        keyRateArray[4] = 0;
+        setTimeout(keyRate, 15, 4);
     }
     if (e.key == "j") {
         JKey = 1;
@@ -154,11 +184,14 @@ function keyDownHandler(e) {
     if (e.key == 'l') {
         LKey = 1;
     }
-    if (e.key == ' ') {
+    if (e.key == ' ' && keyRateArray[5]) {
         SpaceKey = 1;
+        keyRateArray[5] = 0;
+        setTimeout(keyRate, 15, 5);
     }
 
 }
+
 
 function keyUpHandler(e) {
     if (e.key == "w") {
@@ -255,8 +288,8 @@ function drawShot(shot) {
     ctx.fill();
     ctx.closePath();
 
-    shot.x += shotSpeed * Math.cos(shot.direction);
-    shot.y += shotSpeed * Math.sin(shot.direction);
+    // shot.x += shotSpeed * Math.cos(shot.direction);
+    // shot.y += shotSpeed * Math.sin(shot.direction);
 }
 
 function getLengthForDeg(phi) {
@@ -305,48 +338,52 @@ function drawTank(tank) {
 
 var keys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
 var previousKeys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
-var myKeys = [0, 0, 0, 0, 0, 0]; 
+var myKeys = [0, 0, 0, 0, 0, 0];
 
 function arraysEqual(arr1, arr2) {
-    if(arr1.length !== arr2.length)
+    if (arr1.length !== arr2.length)
         return false;
-    for(var i = arr1.length; i--;) {
-        if(arr1[i] !== arr2[i])
+    for (var i = arr1.length; i--;) {
+        if (arr1[i] !== arr2[i])
             return false;
     }
 
     return true;
 }
 
-var tankQueue = []; 
+var tankQueue = [];
 var previousTankStates;
+var keyRate;
 
 function draw() {
 
+     //console.log(tankQueue.length); 
+
     keys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
-    if (!arraysEqual(keys,  [0, 0, 0, 0, 0, 0])) {
-        socket.emit(`tank${playerNum}Actions`, keys); 
+    if (!arraysEqual(keys, [0, 0, 0, 0, 0, 0])) {
+        // console.log("sending ", keys); 
+        socket.emit(`tank${playerNum}Actions`, keys);
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     var currentState;
     if (tankQueue.length !== 0) {
-        currentState = tankQueue.shift(); 
-        previousTankStates = currentState; 
+        currentState = tankQueue.shift();
+        previousTankStates = currentState;
     }
     else {
-        currentState = previousTankStates; 
+        currentState = previousTankStates;
     }
 
     // check queue of tank states
-    var tank0 = currentState[0]; 
-    var tank1 = currentState[1]; 
+    var tank0 = currentState[0];
+    var tank1 = currentState[1];
 
     // draw tank states
 
-    if (tank0) drawTank(tank0); 
-    if (tank1) drawTank(tank1); 
+    if (tank0) drawTank(tank0);
+    if (tank1) drawTank(tank1);
 
 
     requestAnimationFrame(draw);
@@ -359,9 +396,10 @@ var tank2;
 var enemyTank;
 var opponentKeys = []
 
-var playerNum = 0; 
+var playerNum = 0;
 
 var socket = io();
+/*
 socket.on('serverTankData', function (msg) {
 
 
@@ -381,9 +419,9 @@ socket.on('serverTankData', function (msg) {
     if (meTank.health > 0) {
 
         //console.log(JSON.stringify(meTank)); 
-        handleKeys(meTank, myKeys);
-        meTank.checkIfHit(enemyTank);
-        drawTank(meTank);
+       // handleKeys(meTank, myKeys);
+        //meTank.checkIfHit(enemyTank);
+       // drawTank(meTank);
         //socket.emit('tankData', meTank); 
 
         //console.log(keys + "myKeys"); 
@@ -403,30 +441,89 @@ socket.on('serverTankData', function (msg) {
     }
 
 });
+*/
 
 socket.on('setPlayerNum', function (msg) {
 
-    playerNum = msg; 
-    console.log("I am player " + msg); 
+    playerNum = msg;
+    console.log("I am player " + msg);
     if (playerNum == 1) {
         meTank = new Tank(40, 40);
-        enemyTank = new Tank(150, 40); 
-        
+        enemyTank = new Tank(150, 40);
+
     }
     else if (playerNum == 2) {
         meTank = new Tank(150, 40);
-        enemyTank  = new Tank(40, 40); 
+        enemyTank = new Tank(40, 40);
     }
 
-    tankQueue.push([meTank, enemyTank]); 
+    tankQueue.push([meTank, enemyTank]);
 
-    draw(); 
+    draw();
 
 });
 
+var previousGameState;
+var numOfSections = 2;
+
 socket.on('gameState', function (msg) {
 
-    console.log(msg); 
-    tankQueue.push(msg.tankObjects); 
+
+
+    // console.log(msg); 
+
+    if (previousGameState && previousGameState[0] && previousGameState[1]) {
+        // calculate Δ State
+
+        // for (var i = 0; i < msg.tankObjects.shots.length; i++) {
+        //     var tank0x = (msg.tankObjects[i].x - previousGameState.tankObjects[i].x ) / numOfSections;
+        //     var tank0y = (msg.tankObjects[i].y - previousGameState.tankObjects[i].y ) / numOfSections;
+        // }
+
+        if (tankQueue.length < 15) {
+
+
+            var px0 = previousGameState[0].x
+            var py0 = previousGameState[0].y
+            var px1 = previousGameState[1].x
+            var py1 = previousGameState[1].y
+            var pd0 = previousGameState[0].direction;
+            var pd1 = previousGameState[1].direction;
+
+
+
+            var dxtank0 = (msg.tankObjects[0].x - px0) / numOfSections;
+            var dytank0 = (msg.tankObjects[0].y - py0) / numOfSections;
+            var dxtank1 = (msg.tankObjects[1].x - px1) / numOfSections;
+            var dytank1 = (msg.tankObjects[1].y - py1) / numOfSections;
+            var dd0 = (msg.tankObjects[0].direction - pd0) / numOfSections;
+            var dd1 = (msg.tankObjects[1].direction - pd1) / numOfSections;
+
+            for (var i = 0; i < numOfSections; i++) {
+
+
+                var temptank0 = new Tank(px0 + (dxtank0 * i), py0 + (dytank0 * i));
+                temptank0.direction = pd0 + (dd0 * i);
+                temptank0.shots = msg.tankObjects[0].shots;
+
+                var temptank1 = new Tank(px1 + (dxtank1 * i), py1 + (dytank1 * i));
+                temptank1.direction = pd1 + (dd1 * i);
+                temptank1.shots = msg.tankObjects[1].shots;
+
+                //console.log("hello" + [temptank0, temptank1]);
+                tankQueue.push([temptank0, temptank1]);
+            }
+        }
+        else {
+            tankQueue.push(msg.tankObjects);
+        }
+
+    }
+    else {
+        tankQueue.push(msg.tankObjects);
+
+    }
+
+    previousGameState = msg.tankObjects;
 });
 

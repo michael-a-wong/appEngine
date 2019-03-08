@@ -18,10 +18,38 @@ for (var i = 0; i < tankActions.length; i++) {
   tankActions[i] = [0, 0, 0, 0, 0, 0];
 }
 
+// change this to be called run game
+function moveShots(game) {
+
+  //console.log("hello"); 
+  var isChanged = false; 
+  for (var i = 0; i < game.tankObjects.length; i++) {
+    for (var j = 0; j < game.tankObjects[i].shots.length; j++) {
+      var shot = game.tankObjects[i].shots[j];
+      shot.x += shotSpeed * Math.cos(shot.direction);
+      shot.y += shotSpeed * Math.sin(shot.direction);
+
+      isChanged = true; 
+      if (!checkShotLocation(shot)) {
+        game.tankObjects[i].shots.splice(j, 1);
+      }
+    }
+  }
+
+  // if state of the game has changed. 
+  if (isChanged || game.isChanged) {
+    io.emit('gameState', game);
+    game.isChanged = false; 
+  }
+
+
+}
+
 class Game {
   constructor() {
     this.numOfPlayers = 0;
     this.tankObjects = [];
+    this.isChanged = false; 
   }
   // constructor( game) {
 
@@ -29,13 +57,16 @@ class Game {
   addPlayer(playerNum, tank) {
     this.tankObjects[playerNum] = tank;
     this.numOfPlayers++;
+    this.isChanged = true; 
   }
   removePlayer(playerNum) {
     this.tankObjects.splice(playerNum, 1);
     this.numOfPlayers--;
+    this.isChanged = true; 
   }
   playerCommands(playerNum, keys) {
 
+    this.isChanged = true; 
     var opponent = 0;
     if (playerNum == 0) {
       opponent = 1;
@@ -75,7 +106,7 @@ io.on('connection', function (socket) {
 
   if (numOfUsers == 0) {
     game.addPlayer(numOfUsers, new Tank(50, 50));
-    //interval = setInterval(calculateGame, 1000);
+    interval = setInterval(moveShots, 20, game);
   }
   if (numOfUsers == 1) {
     game.addPlayer(numOfUsers, new Tank(150, 50));
@@ -84,13 +115,17 @@ io.on('connection', function (socket) {
   console.log(`You are player ${numOfUsers}`);
   socket.emit('setPlayerNum', numOfUsers);
 
+  // broadcast new updated state to everyone connected
+  io.emit('gameState', game);
+
   numOfUsers++;
 
   console.log(`a user connected number of Users = ` + numOfUsers);
 
   socket.on('disconnect', function () {
     numOfUsers = 0;
-    //clearInterval(interval);
+    clearInterval(interval);
+    game = new Game(); 
     console.log(`user disconnected number of Users = ` + numOfUsers);
     io.emit('endGame', "endGame");
 
@@ -107,9 +142,9 @@ io.on('connection', function (socket) {
     game.playerCommands(0, msg);
 
     //if (previousGameState.isDifferent(game)) {
-      // if game state is different
-     // console.log("sending data"); 
-      io.emit('gameState', game);
+    // if game state is different
+    // console.log("sending data"); 
+    // io.emit('gameState', game);
     //}
 
 
@@ -118,8 +153,8 @@ io.on('connection', function (socket) {
 
     var previousGameState = game;
 
-   // if (!arraysEqual(msg,  [0, 0, 0, 0, 0, 0])) 
-   console.log(msg);
+    // if (!arraysEqual(msg,  [0, 0, 0, 0, 0, 0])) 
+    console.log(msg);
 
 
     //console.log(`received action from 1`);
@@ -128,10 +163,10 @@ io.on('connection', function (socket) {
     //console.log ( previousGameState, game); 
 
     //if (previousGameState.isDifferent(game)) {
-      // if game state is different
-     // console.log("sending data"); 
+    // if game state is different
+    // console.log("sending data"); 
 
-      io.emit('gameState', game);
+    // io.emit('gameState', game);
     //}
 
   });
@@ -250,9 +285,9 @@ class Tank {
           tank.shots.splice(i, 1);
           this.health--;
 
-          if (this.health == 0) {
-            explosion(this);
-          }
+          // if (this.health == 0) {
+          //   explosion(this);
+          // }
 
           // if only one shot can hit at a time
           break;
@@ -283,15 +318,6 @@ class Tank {
   }
 }
 
-function explosion(tank) {
-
-  ctx.beginPath();
-  ctx.arc(tank.x + tankWidth / 2, tank.y + tankHeight / 2, 10, 0, Math.PI * 2);
-  ctx.fillStyle = "red";
-  ctx.fill();
-  ctx.closePath();
-
-}
 
 
 function rotateTank(tank, degree) {
