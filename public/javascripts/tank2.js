@@ -1,7 +1,7 @@
 var canvas = document.getElementById("myCanvas");
 var ctx = canvas.getContext("2d");
 
-console.log(ctx.rotate);
+//console.log(ctx.rotate);
 
 
 var tankWidth = 25;
@@ -34,53 +34,28 @@ class Game {
       this.numOfPlayers = 0; 
       this.tankObjects = []; 
     }
-    // addPlayer(playerNum, tank) {
-    //   this.tankObjects[playerNum] = tank; 
-    //   this.numOfPlayers++; 
-    // }
-    // removePlayer(playerNum) {
-    //   this.tankObjects.splice(playerNum, 1); 
-    //   this.numOfPlayers--; 
-    // }
-    // playerCommands(playerNum, keys) {
+    addPlayer(playerNum, tank) {
+      this.tankObjects[playerNum] = tank; 
+      this.numOfPlayers++; 
+    }
+    removePlayer(playerNum) {
+      this.tankObjects.splice(playerNum, 1); 
+      this.numOfPlayers--; 
+    }
+    playerCommands(playerNum, keys) {
   
-    //   var opponent = 0; 
-    //   if (playerNum == 0) {
-    //     opponent = 1; 
-    //   }
+      var opponent = 0; 
+      if (playerNum == 0) {
+        opponent = 1; 
+      }
   
-    //   handleKeys(tankObjects[playerNum], keys)
-    //   tankObjects[playerNum].checkIfHit(tankObjects[opponent]); 
+      handleKeys(tankObjects[playerNum], keys)
+      tankObjects[playerNum].checkIfHit(tankObjects[opponent]); 
   
-    //   // might have to delete line below
-    //   tankObjects[opponent].checkIfHit(tankObjects[playerNum]); 
+      // might have to delete line below
+      tankObjects[opponent].checkIfHit(tankObjects[playerNum]); 
   
   
-    // }
-    updateGame(serverGame) {
-
-        // compare tanks
-        // calculate distances 
-        // make moves
-        // add made up moves to a queue
-
-        if (this.numOfPlayers != serverGame.numOfPlayers) {
-            this.numOfPlayers = serverGame.numOfPlayers; 
-        }
-
-        for (var i = 0; i < serverGame.tankObjects.length; i++) {
-
-            if (this.tankObjects[i] === undefined) {
-                this.tankObjects[i] = serverGame.tankObjects[i]; 
-            }
-            else {
-                // compare tank objects
-                
-                // add shots
-                 
-            }
-        }
-
     }
     
   }
@@ -326,6 +301,8 @@ function drawTank(tank) {
     }
 }
 
+
+
 var keys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
 var previousKeys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
 var myKeys = [0, 0, 0, 0, 0, 0]; 
@@ -341,41 +318,36 @@ function arraysEqual(arr1, arr2) {
     return true;
 }
 
+var tankQueue = []; 
+var previousTankStates;
+
 function draw() {
 
     keys = [WKey, SKey, EKey, AKey, DKey, SpaceKey];
-
-   // if ( !arraysEqual(previousKeys, keys)) {
-        
-        //socket.emit('tankData', keys);
+    if (!arraysEqual(keys,  [0, 0, 0, 0, 0, 0])) {
         socket.emit(`tank${playerNum}Actions`, keys); 
-    //}
-    previousKeys = keys; 
+    }
 
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // if (meTank.health > 0) {
+    var currentState;
+    if (tankQueue.length !== 0) {
+        currentState = tankQueue.shift(); 
+        previousTankStates = currentState; 
+    }
+    else {
+        currentState = previousTankStates; 
+    }
 
-    //     //console.log(JSON.stringify(meTank)); 
-    //     handleKeys(meTank, myKeys);
-    //     meTank.checkIfHit(enemyTank);
-    //     drawTank(meTank);
-    //     //socket.emit('tankData', meTank); 
+    // check queue of tank states
+    var tank0 = currentState[0]; 
+    var tank1 = currentState[1]; 
 
-    //     //console.log(keys + "myKeys"); 
-        
-    // }
+    // draw tank states
 
-    // if (opponentKeys.length === 6) {
-    //     handleKeys(enemyTank, opponentKeys);
-    //     //opponentKeys.fill(0); 
-    // }
+    if (tank0) drawTank(tank0); 
+    if (tank1) drawTank(tank1); 
 
-    // if (enemyTank.health > 0) {
-    //     drawTank(enemyTank);
-    //     if (meTank.health > 0) {
-    //         meTank.checkIfHit.call(enemyTank, meTank);
-    //     }
-    // }
 
     requestAnimationFrame(draw);
 }
@@ -391,7 +363,6 @@ var playerNum = 0;
 
 var socket = io();
 socket.on('serverTankData', function (msg) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
 
     if (playerNum == 1) {
@@ -438,22 +409,24 @@ socket.on('setPlayerNum', function (msg) {
     playerNum = msg; 
     console.log("I am player " + msg); 
     if (playerNum == 1) {
-        meTank = new Tank(50, 50);
-        enemyTank = new Tank(150, 50); 
+        meTank = new Tank(40, 40);
+        enemyTank = new Tank(150, 40); 
         
     }
     else if (playerNum == 2) {
-        meTank = new Tank(150, 50);
-        enemyTank  = new Tank(50, 50); 
+        meTank = new Tank(150, 40);
+        enemyTank  = new Tank(40, 40); 
     }
+
+    tankQueue.push([meTank, enemyTank]); 
 
     draw(); 
 
 });
 
-socket.on('gameState', function(msg) {
+socket.on('gameState', function (msg) {
 
-    // process game
-    // add new commads to queue
-}); 
+    console.log(msg); 
+    tankQueue.push(msg.tankObjects); 
+});
 
